@@ -3,137 +3,466 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تطبيق طبيب - تذكير الأدوية</title>
+    <title>تطبيق طبيب - متصل بنظام حكيم</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap');
+
         :root {
-            --app-primary: #00b4d8;
-            --app-secondary: #0077b6;
-            --bg-color: #f0f8ff;
+            --primary: #0056b3;
+            --secondary: #00b4d8;
+            --success: #2a9d8f;
+            --bg-color: #f4f7f6;
+            --text-dark: #2b2d42;
+            --text-light: #8d99ae;
         }
+
         body {
             margin: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Tajawal', sans-serif;
             background-color: var(--bg-color);
-            color: #333;
+            color: var(--text-dark);
+            overflow-x: hidden;
         }
-        .header {
-            background: linear-gradient(135deg, var(--app-primary), var(--app-secondary));
-            color: white;
-            padding: 30px 20px;
-            text-align: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            position: relative;
+
+        /* --- Animations --- */
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
-        .hakeem-badge {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(255,255,255,0.2);
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 0.9em;
-            border: 1px solid white;
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
-        .container {
-            max-width: 800px;
-            margin: 40px auto;
-            padding: 0 20px;
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
         }
-        .reminder-card {
+
+        /* --- Login Section --- */
+        #login-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+        }
+
+        .login-box {
             background: white;
-            border-radius: 12px;
-            padding: 20px;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            animation: slideUp 0.8s ease-out;
+        }
+
+        .login-box h2 {
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
+        .login-box p {
+            color: var(--text-light);
+            font-size: 0.9em;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
             margin-bottom: 20px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            text-align: right;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: var(--text-dark);
+        }
+
+        .input-group input {
+            width: 90%;
+            padding: 12px 15px;
+            border: 2px solid #e1e5ee;
+            border-radius: 10px;
+            font-family: 'Tajawal', sans-serif;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            border-color: var(--secondary);
+            outline: none;
+        }
+
+        .login-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px;
+            width: 100%;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-family: 'Tajawal', sans-serif;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.2s;
+        }
+
+        .login-btn:hover {
+            background: #004494;
+            transform: translateY(-2px);
+        }
+
+        .hakeem-logo {
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        /* --- Dashboard Section --- */
+        #dashboard-section {
+            display: none;
+            animation: fadeIn 1s ease-in;
+        }
+
+        .header {
+            background: white;
+            padding: 20px 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-right: 5px solid var(--app-primary);
-            transition: transform 0.2s;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
-        .reminder-card:hover {
-            transform: scale(1.02);
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
         }
-        .med-info h3 {
-            margin: 0 0 10px 0;
-            color: var(--app-secondary);
+
+        .avatar {
+            width: 50px;
+            height: 50px;
+            background: var(--secondary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            font-weight: bold;
         }
-        .med-info p {
-            margin: 0;
-            color: #666;
-            font-size: 0.9em;
+
+        .status-badge {
+            background: #e8f5e9;
+            color: var(--success);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+            border: 1px solid var(--success);
         }
+
+        .main-content {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .progress-bar-bg {
+            background: #e1e5ee;
+            height: 12px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: var(--success);
+            height: 100%;
+            width: 0%;
+            transition: width 0.8s ease-in-out;
+        }
+
+        /* Medication Cards */
+        .med-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .med-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            border-right: 5px solid var(--primary);
+            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .med-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .med-card.taken {
+            border-right-color: var(--success);
+            opacity: 0.8;
+        }
+
+        .med-icon {
+            font-size: 2em;
+            margin-bottom: 15px;
+        }
+
         .med-time {
-            background: #e0f7fa;
-            color: var(--app-secondary);
-            padding: 10px 20px;
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: var(--bg-color);
+            padding: 5px 10px;
             border-radius: 8px;
             font-weight: bold;
-            font-size: 1.2em;
+            color: var(--primary);
         }
-        .status-btn {
-            background: #4caf50;
-            color: white;
+
+        .med-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .med-desc {
+            color: var(--text-light);
+            font-size: 0.9em;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 12px;
             border: none;
-            padding: 10px 15px;
-            border-radius: 5px;
+            border-radius: 8px;
+            background: var(--primary);
+            color: white;
+            font-family: 'Tajawal', sans-serif;
+            font-weight: bold;
             cursor: pointer;
             transition: background 0.3s;
         }
-        .status-btn:hover { background: #388e3c; }
-        .status-btn.taken {
-            background: #9e9e9e;
-            cursor: not-allowed;
+
+        .action-btn:hover { background: #004494; }
+        
+        .action-btn.taken-btn {
+            background: var(--success);
+            cursor: default;
         }
-        .back-btn {
-            display: inline-block;
-            margin-top: 30px;
-            color: var(--app-secondary);
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 40px;
+            color: var(--text-light);
             text-decoration: none;
-            font-weight: bold;
+            transition: color 0.3s;
+        }
+
+        .back-link:hover { color: var(--primary); }
+
+        /* Loader */
+        .loader {
+            display: none;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <div class="hakeem-badge">✓ متصل بنظام حكيم</div>
-        <h1>تطبيق "طبيب"</h1>
-        <p>مساعدك الشخصي لتنظيم وتذكير مواعيد أدويتك الموصوفة</p>
+    <div id="login-section">
+        <div class="login-box">
+            <h2>تطبيق طبيب 🩺</h2>
+            <p>سجل دخولك للوصول إلى سجلاتك المربوطة بحكيم</p>
+            
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="input-group">
+                    <label for="national-id">الرقم الوطني للمريض</label>
+                    <input type="text" id="national-id" required placeholder="أدخل رقمك الوطني" maxlength="10">
+                </div>
+                <div class="input-group">
+                    <label for="password">كلمة المرور (نظام حكيم)</label>
+                    <input type="password" id="password" required placeholder="********">
+                </div>
+                <button type="submit" class="login-btn" id="login-btn-text">
+                    <span id="btn-text">تسجيل الدخول</span>
+                    <div class="loader" id="login-loader"></div>
+                </button>
+            </form>
+
+            <div class="hakeem-logo">
+                <span>🔗 مزامنة آمنة مع قاعدة بيانات مستشفيات وزارة الصحة (حكيم)</span>
+            </div>
+        </div>
     </div>
 
-    <div class="container">
-        <h2 style="color: var(--app-secondary); border-bottom: 2px solid #ccc; padding-bottom: 10px;">جدول الأدوية لليوم</h2>
-        
-        <div class="reminder-card">
-            <div class="med-info">
-                <h3>بانادول أدفانس (Panadol Advance)</h3>
-                <p>الجرعة: حبة واحدة (بعد الأكل)</p>
-                <p>وصفة د. أحمد (الباطنية) - مستشفى الملك عبدالله</p>
+    <div id="dashboard-section">
+        <header class="header">
+            <div class="user-info">
+                <div class="avatar">م</div>
+                <div>
+                    <h3 style="margin: 0; color: var(--text-dark);">مريض مسجل</h3>
+                    <span style="font-size: 0.8em; color: var(--text-light);">ملف طبي رقم: #45892</span>
+                </div>
             </div>
-            <div class="med-time">08:00 صباحاً</div>
-            <button class="status-btn" onclick="takeMed(this)">تأكيد التناول</button>
-        </div>
+            <div class="status-badge">✓ متصل بنظام حكيم</div>
+        </header>
 
-        <div class="reminder-card">
-            <div class="med-info">
-                <h3>أوجمنتين (Augmentin 1g)</h3>
-                <p>الجرعة: حبة واحدة (كل 12 ساعة)</p>
-                <p>مستورد من السجل الطبي الإلكتروني (حكيم)</p>
+        <div class="main-content">
+            
+            <div class="progress-container">
+                <div class="progress-header">
+                    <strong>الالتزام اليومي بالأدوية</strong>
+                    <span id="progress-text">0%</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <p style="font-size: 0.85em; color: var(--text-light); margin-top: 10px;">
+                    تم تناول <span id="taken-count">0</span> من أصل <span id="total-count">3</span> أدوية مجدولة لليوم.
+                </p>
             </div>
-            <div class="med-time">08:00 مساءً</div>
-            <button class="status-btn" onclick="takeMed(this)">تأكيد التناول</button>
-        </div>
 
-        <a href="index.html" class="back-btn">← العودة إلى العرض التقديمي</a>
+            <h2 style="margin-bottom: 20px; color: var(--primary);">الجدول اليومي 📅</h2>
+
+            <div class="med-grid">
+                
+                <div class="med-card" id="card-1">
+                    <div class="med-time">08:00 ص</div>
+                    <div class="med-icon">💊</div>
+                    <div class="med-name">أوميبرازول (Omeprazole)</div>
+                    <div class="med-desc">
+                        الجرعة: كبسولة واحدة (20mg)<br>
+                        التعليمات: قبل الإفطار بنصف ساعة<br>
+                        <strong style="color:var(--primary);">الطبيب: د. محمد - مستشفى الملك عبدالله</strong>
+                    </div>
+                    <button class="action-btn" onclick="takeMed(1, this)">تأكيد التناول</button>
+                </div>
+
+                <div class="med-card" id="card-2">
+                    <div class="med-time">02:00 م</div>
+                    <div class="med-icon">💉</div>
+                    <div class="med-name">أنسولين (Insulin)</div>
+                    <div class="med-desc">
+                        الجرعة: 10 وحدات<br>
+                        التعليمات: بعد وجبة الغداء مباشرة<br>
+                        <strong style="color:var(--primary);">الوصفة مستوردة من السجل الإلكتروني</strong>
+                    </div>
+                    <button class="action-btn" onclick="takeMed(2, this)">تأكيد التناول</button>
+                </div>
+
+                <div class="med-card" id="card-3">
+                    <div class="med-time">08:00 م</div>
+                    <div class="med-icon">🩸</div>
+                    <div class="med-name">أوجمنتين (Augmentin)</div>
+                    <div class="med-desc">
+                        الجرعة: حبة واحدة (1g)<br>
+                        التعليمات: مضاد حيوي (يجب إكماله)<br>
+                        <strong style="color:var(--primary);">تنبيه: متبقي 4 حبات في العلبة</strong>
+                    </div>
+                    <button class="action-btn" onclick="takeMed(3, this)">تأكيد التناول</button>
+                </div>
+
+            </div>
+
+            <a href="index.html" class="back-link">← إنهاء العرض والعودة للصفحة الرئيسية</a>
+        </div>
     </div>
 
     <script>
-        function takeMed(button) {
-            button.classList.add('taken');
-            button.innerText = 'تم التناول ✓';
+        // --- متغيرات لتتبع التقدم ---
+        const totalMeds = 3;
+        let takenMeds = 0;
+
+        // --- دالة تسجيل الدخول ---
+        function handleLogin(event) {
+            event.preventDefault(); // منع إعادة تحميل الصفحة
+            
+            const btnText = document.getElementById('btn-text');
+            const loader = document.getElementById('login-loader');
+            
+            // محاكاة التحميل والاتصال بقاعدة البيانات
+            btnText.style.display = 'none';
+            loader.style.display = 'block';
+
+            setTimeout(() => {
+                // إخفاء شاشة تسجيل الدخول وإظهار التطبيق
+                document.getElementById('login-section').style.display = 'none';
+                document.getElementById('dashboard-section').style.display = 'block';
+            }, 1500); // تأخير ثانية ونصف لمحاكاة الاتصال بحكيم
+        }
+
+        // --- دالة تأكيد تناول الدواء ---
+        function takeMed(id, button) {
+            const card = document.getElementById('card-' + id);
+            
+            // تغيير شكل البطاقة والزر
+            card.classList.add('taken');
+            button.classList.add('taken-btn');
+            button.innerText = 'تم التناول بنجاح ✓';
             button.disabled = true;
-            // يمكن إضافة تأثير صوتي هنا للتنبيه
+
+            // تحديث شريط التقدم
+            takenMeds++;
+            updateProgress();
+        }
+
+        // --- دالة تحديث شريط التقدم ---
+        function updateProgress() {
+            const percentage = (takenMeds / totalMeds) * 100;
+            
+            document.getElementById('progress-fill').style.width = percentage + '%';
+            document.getElementById('progress-text').innerText = Math.round(percentage) + '%';
+            document.getElementById('taken-count').innerText = takenMeds;
+
+            if(percentage === 100) {
+                setTimeout(() => {
+                    alert('ممتاز! لقد التزمت بجميع أدويتك المجدولة لهذا اليوم.');
+                }, 500);
+            }
         }
     </script>
 
