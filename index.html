@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>عرض حكيم وتطبيق طبيب | قيس جازي</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #f4f7f6; font-family: 'Cairo', sans-serif; }
+
+        /* --- LAMP INTRO --- */
+        #intro-screen {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: #0f172a; z-index: 100;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: background-color 0.8s ease;
+        }
+        .wire { width: 3px; height: 150px; background-color: #334155; position: absolute; top: 0; }
+        .lamp-icon {
+            font-size: 100px; color: #334155; cursor: pointer; position: relative;
+            margin-top: -50px; transition: all 0.3s ease;
+        }
+        .lamp-icon:hover { color: #475569; transform: scale(1.05); }
+        .intro-text { color: #64748b; margin-top: 40px; font-size: 20px; letter-spacing: 1px; transition: opacity 0.3s; }
+
+        #intro-screen.light-on { background-color: #ffffff; }
+        #intro-screen.light-on .lamp-icon { color: #fcd34d; filter: drop-shadow(0 0 50px #fbbf24) drop-shadow(0 0 100px #f59e0b); }
+        #intro-screen.light-on .wire { background-color: #e2e8f0; }
+        #intro-screen.light-on .intro-text { opacity: 0; }
+        
+        .flash-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: white; opacity: 0; pointer-events: none; z-index: 101;
+        }
+        .flash-overlay.active { animation: flash 1s ease-out forwards; }
+        @keyframes flash { 0% { opacity: 0; } 50% { opacity: 1; } 100% { opacity: 0; } }
+
+        /* --- SLIDES --- */
+        #presentation { display: none; width: 100vw; height: 100vh; position: relative; }
+        .slide {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0; visibility: hidden; pointer-events: none;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 15px 15px 80px 15px; /* Mobile padding */
+            transition: opacity 0.5s ease; box-sizing: border-box;
+        }
+        @media (min-width: 768px) {
+            .slide { padding: 20px 80px; } /* Desktop padding */
+        }
+        .slide.active { opacity: 1; visibility: visible; pointer-events: auto; }
+        
+        .slide-content {
+            background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            width: 100%; max-width: 1100px; max-height: 85vh; overflow-y: auto; padding: 20px; border: 1px solid #e2e8f0;
+        }
+        @media (min-width: 768px) {
+            .slide-content { padding: 40px; border-radius: 30px; }
+        }
+        .slide-content::-webkit-scrollbar { width: 5px; }
+        .slide-content::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .slide-content::-webkit-scrollbar-track { background: transparent; }
+
+        /* --- SIDE CONTROLS --- */
+        .side-btn {
+            position: fixed; bottom: 15px; top: auto; transform: none;
+            background: white; color: #005b96; width: 50px; height: 50px; border-radius: 50%;
+            font-size: 20px; border: 2px solid #e2e8f0; box-shadow: 0 5px 15px rgba(0,0,0,0.1); 
+            cursor: pointer; transition: all 0.3s ease; z-index: 50;
+            display: none; align-items: center; justify-content: center;
+        }
+        @media (min-width: 768px) {
+            .side-btn {
+                top: 50%; transform: translateY(-50%); bottom: auto;
+                width: 60px; height: 60px; font-size: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+            }
+            .side-btn:hover:not(:disabled) { transform: translateY(-50%) scale(1.1); }
+        }
+        .side-btn:active:not(:disabled) { transform: scale(0.95); }
+        .side-btn:disabled { opacity: 0.15; cursor: not-allowed; }
+        
+        #next-btn { right: 15px; } 
+        #prev-btn { left: 15px; }  
+        @media (min-width: 768px) {
+            #next-btn { right: 20px; }
+            #prev-btn { left: 20px; }
+        }
+
+        .presenter-tag {
+            display: inline-block; background: #f1f5f9; color: #334155;
+            padding: 8px 24px; border-radius: 50px; font-weight: 700; font-size: 14px;
+            margin-bottom: 20px; border: 1px solid #e2e8f0;
+        }
+
+        /* Tabeeb Theme Overrides */
+        .slide.tabeeb-slide .slide-content { border-top: 8px solid #00a896; }
+        body.tabeeb-active .side-btn { color: #00a896; }
+        body.tabeeb-active .side-btn:hover:not(:disabled) { background: #00a896; color: white; border-color: #00a896; }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- Intro -->
+    <div id="intro-screen">
+        <div class="wire"></div>
+        <i class="fa-solid fa-lightbulb lamp-icon" id="magic-lamp"></i>
+        <p class="intro-text">اضغط على المصباح لبدء العرض</p>
+    </div>
+    <div id="flash" class="flash-overlay"></div>
+
+    <!-- Presentation -->
+    <div id="presentation">
+
+        <!-- SLIDE 1: Title -->
+        <div class="slide active">
+            <div class="slide-content text-center flex flex-col items-center justify-center border-t-8 border-[#005b96] min-h-[50vh] md:min-h-[60vh]">
+                <i class="fa-solid fa-laptop-medical text-5xl md:text-6xl text-[#0392cf] mb-4 md:mb-6"></i>
+                <h1 class="text-4xl md:text-7xl font-black text-[#005b96] mb-2 md:mb-4">برنامج حكيم</h1>
+                <p class="text-lg md:text-2xl text-gray-500 font-semibold mb-8 md:mb-12">التحول الرقمي لقطاع الرعاية الصحية في الأردن</p>
+                <div class="bg-gray-50 border border-gray-200 rounded-xl md:rounded-2xl p-4 md:p-6 w-full max-w-2xl">
+                    <h3 class="text-gray-400 font-bold mb-3 md:mb-4 uppercase tracking-wider text-xs md:text-sm">فريق إعداد المشروع</h3>
+                    <div class="flex flex-wrap justify-center gap-2 md:gap-4 text-sm md:text-lg font-bold text-gray-700">
+                        <span class="bg-white px-3 py-1.5 md:px-5 md:py-2 rounded-full shadow-sm border border-gray-100 text-[#005b96]">إعداد: قيس جازي</span>
+                        <span class="bg-white px-3 py-1.5 md:px-5 md:py-2 rounded-full shadow-sm border border-gray-100">رهف مصطفى</span>
+                        <span class="bg-white px-3 py-1.5 md:px-5 md:py-2 rounded-full shadow-sm border border-gray-100">محمد حسان</span>
+                        <span class="bg-white px-3 py-1.5 md:px-5 md:py-2 rounded-full shadow-sm border border-gray-100">سيف قيزان</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 2: Intro -->
+        <div class="slide">
+            <div class="slide-content">
+                <div class="flex flex-col md:flex-row gap-6 md:gap-10 items-center">
+                    <div class="w-full md:w-1/2">
+                        <div class="presenter-tag"><i class="fa-solid fa-info-circle text-[#0392cf]"></i> مقدمة عامة</div>
+                        <h2 class="text-2xl md:text-4xl font-black text-gray-800 mb-4 md:mb-6">ما هو برنامج حكيم؟</h2>
+                        <p class="text-base md:text-lg text-gray-600 leading-relaxed mb-4 md:mb-6 text-justify">
+                            أُطلق برنامج "حكيم" كأول مبادرة وطنية تهدف إلى رقمنة وحوسبة القطاع الصحي العام في المملكة الأردنية الهاشمية. 
+                            تقود هذه المبادرة شركة الحوسبة الصحية (EHS) تماشياً مع الرؤية الملكية السامية للارتقاء بمستوى الخدمات الطبية المقدمة للمواطنين.
+                        </p>
+                        <div class="bg-blue-50 p-4 md:p-6 rounded-xl md:rounded-2xl border-r-4 border-[#005b96]">
+                            <h4 class="font-bold text-[#005b96] text-base md:text-lg mb-2">الهدف الاستراتيجي</h4>
+                            <p class="text-sm md:text-base text-gray-700 leading-relaxed text-justify">
+                                يهدف البرنامج بشكل أساسي إلى إنشاء <strong>سجلات صحية إلكترونية (EHR)</strong> شاملة لكل مواطن. 
+                                يقوم النظام بربط كافة المستشفيات والمراكز الصحية الحكومية بشبكة واحدة متكاملة، 
+                                مما يتيح للأطباء ومقدمي الرعاية الوصول الفوري والآمن للتاريخ الطبي الكامل للمريض من أي مكان.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="w-full md:w-1/2">
+                        <img src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=800&q=80" class="rounded-xl md:rounded-3xl shadow-lg w-full h-48 md:h-[400px] object-cover">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 3: Rahaf -->
+        <div class="slide">
+            <div class="slide-content border-t-8 border-purple-500">
+                <div class="presenter-tag"><i class="fa-solid fa-microphone text-purple-500"></i> إعداد وتقديم: رهف مصطفى</div>
+                <h2 class="text-2xl md:text-4xl font-black text-gray-800 mb-6 md:mb-8">كيف سهل حكيم <span class="text-purple-600">تشخيص المرض؟</span></h2>
+                
+                <p class="text-base md:text-lg text-gray-600 mb-8 leading-relaxed text-center max-w-3xl mx-auto">
+                    التشخيص الدقيق يعتمد كلياً على المعطيات الصحيحة. لقد قضى برنامج حكيم على مشكلة اعتماد الطبيب على ذاكرة المريض المشتتة، ووفر بيئة طبية آمنة ومتكاملة:
+                </p>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+                    <div class="bg-purple-50 p-5 md:p-6 rounded-xl md:rounded-2xl text-center">
+                        <i class="fa-solid fa-notes-medical text-3xl md:text-4xl text-purple-500 mb-3 md:mb-4"></i>
+                        <h3 class="text-lg md:text-xl font-bold mb-2 md:mb-3">تاريخ طبي شامل وموثق</h3>
+                        <p class="text-sm md:text-base text-gray-600 leading-relaxed">
+                            بمجرد إدخال الرقم الوطني، يفتح أمام الطبيب سجل كامل يشمل الأمراض المزمنة، العمليات الجراحية السابقة، والأدوية المصروفة، مما يمنع أي تشخيص خاطئ مبني على نقص المعلومات.
+                        </p>
+                    </div>
+                    <div class="bg-purple-50 p-5 md:p-6 rounded-xl md:rounded-2xl text-center">
+                        <i class="fa-solid fa-shield-virus text-3xl md:text-4xl text-purple-500 mb-3 md:mb-4"></i>
+                        <h3 class="text-lg md:text-xl font-bold mb-2 md:mb-3">إدارة الحساسية والتداخلات</h3>
+                        <p class="text-sm md:text-base text-gray-600 leading-relaxed">
+                            النظام مبرمج لإصدار تنبيهات ذكية وتلقائية للطبيب في حال محاولته وصف دواء قد يسبب حساسية موثقة للمريض، أو دواء يتعارض كيميائياً مع أدوية أخرى يتناولها حالياً.
+                        </p>
+                    </div>
+                    <div class="bg-purple-50 p-5 md:p-6 rounded-xl md:rounded-2xl text-center">
+                        <i class="fa-solid fa-bolt text-3xl md:text-4xl text-purple-500 mb-3 md:mb-4"></i>
+                        <h3 class="text-lg md:text-xl font-bold mb-2 md:mb-3">سرعة اتخاذ القرار لإنقاذ الحياة</h3>
+                        <p class="text-sm md:text-base text-gray-600 leading-relaxed">
+                            في الطوارئ، الوقت هو الفارق. حكيم يوفر وصولاً لحظياً لنتائج التحاليل المخبرية وصور الأشعة فور صدورها على شاشة الطبيب دون انتظار طباعتها، لتسريع بدء خطة العلاج.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 4: Mohammad -->
+        <div class="slide">
+            <div class="slide-content border-t-8 border-red-500">
+                <div class="presenter-tag"><i class="fa-solid fa-microphone text-red-500"></i> إعداد وتقديم: محمد حسان</div>
+                <div class="flex flex-col md:flex-row gap-6 md:gap-10 items-center">
+                    <div class="w-full md:w-1/2">
+                        <h2 class="text-2xl md:text-4xl font-black text-gray-800 mb-4 md:mb-6">النظام الصحي <span class="text-red-500">قبل حكيم</span></h2>
+                        <p class="text-base md:text-lg text-gray-600 leading-relaxed mb-6 text-justify">
+                            قبل إطلاق مبادرة حكيم، كان المشهد في المستشفيات والمراكز الصحية يعتمد كلياً على المعاملات الورقية اليدوية، وهو ما كان يشكل كابوساً إدارياً وطبياً:
+                        </p>
+
+                        <div class="space-y-3 md:space-y-4">
+                            <div class="flex items-start gap-3 md:gap-4 bg-red-50 p-3 md:p-4 rounded-xl">
+                                <div class="bg-red-500 text-white w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center shrink-0 mt-1"><i class="fa-solid fa-file-circle-xmark text-sm md:text-base"></i></div>
+                                <div class="text-sm md:text-base">
+                                    <strong class="block text-red-700 mb-1">عصر الأرشيف الورقي</strong> 
+                                    كانت المستشفيات تتطلب مساحات تخزين هائلة. الملفات كانت عرضة للتلف، الضياع، أو اختلاط الأسماء، مما يعني ضياع التاريخ الطبي للمريض بالكامل.
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-3 md:gap-4 bg-orange-50 p-3 md:p-4 rounded-xl">
+                                <div class="bg-orange-500 text-white w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center shrink-0 mt-1"><i class="fa-solid fa-hourglass-empty text-sm md:text-base"></i></div>
+                                <div class="text-sm md:text-base">
+                                    <strong class="block text-orange-700 mb-1">بطء شديد وتكرار مكلف</strong> 
+                                    المريض يقضي ساعات لاستخراج ملفه أو في طوابير الصيدلية، ويضطر المريض لإعادة نفس الفحوصات عند زيارة مستشفى آخر لعدم وجود ربط بين المستشفيات.
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-3 md:gap-4 bg-yellow-50 p-3 md:p-4 rounded-xl">
+                                <div class="bg-yellow-600 text-white w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center shrink-0 mt-1"><i class="fa-solid fa-eye-slash text-sm md:text-base"></i></div>
+                                <div class="text-sm md:text-base">
+                                    <strong class="block text-yellow-700 mb-1">قصور في جودة الرعاية</strong> 
+                                    بسبب غياب السجل الموحد، كان الطبيب يعالج المريض بناءً على الأعراض الحالية فقط دون رؤية الصورة الطبية التراكمية، مما يضعف متابعة الحالات المزمنة.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="w-full md:w-1/2">
+                        <img src="https://images.unsplash.com/photo-1568667256549-094345857637?auto=format&fit=crop&w=600&q=80" class="rounded-xl md:rounded-3xl shadow-lg w-full h-48 md:h-[500px] object-cover grayscale opacity-80">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 5: Saif -->
+        <div class="slide">
+            <div class="slide-content border-t-8 border-green-500">
+                <div class="presenter-tag"><i class="fa-solid fa-microphone text-green-600"></i> إعداد وتقديم: سيف قيزان</div>
+                <h2 class="text-2xl md:text-4xl font-black text-center mb-6 md:mb-10 text-gray-800">المشكلة <span class="text-gray-400 font-normal">مقابل</span> الحل الذكي</h2>
+                
+                <div class="flex flex-col md:flex-row gap-4 md:gap-6">
+                    <!-- The Problem -->
+                    <div class="w-full md:w-1/2 bg-gray-50 p-5 md:p-8 rounded-xl md:rounded-3xl border border-gray-200">
+                        <h3 class="text-xl md:text-2xl font-bold text-red-600 mb-4 md:mb-6"><i class="fa-solid fa-circle-xmark mr-2"></i> المشكلة سابقاً</h3>
+                        <ul class="space-y-4 md:space-y-5 text-gray-700 text-sm md:text-lg">
+                            <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-xmark text-red-500 mt-1 shrink-0"></i> 
+                                <span><strong>تشتت البيانات:</strong> كل طبيب أو مستشفى حكومي لديه ملف منفصل لنفس المريض، لا يوجد رابط بينها.</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-xmark text-red-500 mt-1 shrink-0"></i> 
+                                <span><strong>عبء جسدي ونفسي:</strong> المريض يضطر لحمل ملفاته، أوراقه، وتقاريره الطبية معه في كل زيارة طبية.</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-xmark text-red-500 mt-1 shrink-0"></i> 
+                                <span><strong>هدر مالي وزمني:</strong> إعادة إجراء الفحوصات المخبرية أكثر من مرة لعدم توفر النتائج السابقة.</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- The Solution -->
+                    <div class="w-full md:w-1/2 bg-green-50 p-5 md:p-8 rounded-xl md:rounded-3xl border border-green-100 shadow-lg">
+                        <h3 class="text-xl md:text-2xl font-bold text-green-700 mb-4 md:mb-6"><i class="fa-solid fa-circle-check mr-2"></i> الحل مع حكيم</h3>
+                        <ul class="space-y-4 md:space-y-5 text-gray-800 text-sm md:text-lg">
+                            <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-check text-green-600 mt-1 shrink-0"></i> 
+                                <span><strong>ملف إلكتروني موحد:</strong> خلق لغة مشتركة بين المنشآت؛ جميع الأطباء المعتمدين يرون نفس البيانات المحدثة.</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-check text-green-600 mt-1 shrink-0"></i> 
+                                <span><strong>مشاركة لحظية للفحوصات:</strong> الصور الشعاعية والتحاليل متوفرة فوراً، مما يقلل الكلف المالية على الدولة والمريض.</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <i class="fa-solid fa-check text-green-600 mt-1 shrink-0"></i> 
+                                <span><strong>سرعة وكفاءة التنقل (E-Referral):</strong> تحويل المريض بين العيادات يتم إلكترونياً بسلاسة وبلا أوراق.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 6: Qais (THE LINK TO THE APP) -->
+        <div class="slide tabeeb-slide bg-[#f0fdf4]">
+            <div class="slide-content border-t-8 border-[#00a896] bg-white text-center">
+                <div class="presenter-tag bg-teal-50 border-teal-200 text-teal-800"><i class="fa-solid fa-code text-teal-600"></i> إعداد وتصميم: قيس جازي</div>
+                
+                <h2 class="text-3xl md:text-5xl font-black text-[#00a896] mb-3 md:mb-4">تطبيق "طبيب"</h2>
+                <h3 class="text-base md:text-xl text-gray-500 font-bold mb-6 md:mb-8">بوابة المريض المعتمدة للاتصال المباشر بنظام حكيم</h3>
+                
+                <div class="text-sm md:text-lg text-gray-700 max-w-4xl mx-auto mb-8 md:mb-10 leading-relaxed text-justify md:text-center space-y-4 bg-teal-50/30 p-4 md:p-6 rounded-2xl border border-teal-100">
+                    <p>
+                        لتكتمل دائرة الرعاية الصحية وتصبح متطورة بالكامل، كان لابد من إشراك المريض في إدارة صحته. 
+                        لذلك، قمت بتصميم وبرمجة واجهة تطبيق <strong>"طبيب"</strong> كنموذج عملي وتخيلي متقدم.
+                    </p>
+                    <p>
+                        التطبيق يمثل <strong>(Patient Portal)</strong> معتمد من وزارة الصحة، يرتبط بشكل لحظي مع قواعد بيانات نظام حكيم، 
+                        ليسمح للمريض برفع مستنداته الخارجية للطبيب، والأهم من ذلك: <strong>الحصول على تذكيرات ذكية بمواعيد الأدوية</strong> 
+                        مبنية على الوصفة الإلكترونية (e-Prescription) المصروفة من حكيم لضمان الالتزام بخطة العلاج.
+                    </p>
+                </div>
+
+                <!-- THE MAGIC BUTTON THAT OPENS THE SECOND PAGE -->
+                <a href="tabeeb.html" class="inline-flex items-center justify-center gap-2 md:gap-4 bg-gradient-to-r from-[#00a896] to-[#028090] text-white px-6 py-3 md:px-10 md:py-5 rounded-full font-bold text-lg md:text-2xl shadow-[0_10px_25px_rgba(0,168,150,0.4)] hover:shadow-[0_15px_35px_rgba(0,168,150,0.6)] hover:-translate-y-2 transition-all duration-300 w-[90%] md:w-auto mx-auto">
+                    <i class="fa-solid fa-mobile-screen-button text-2xl md:text-3xl animate-bounce"></i>
+                    <span>الدخول إلى واجهة تطبيق طبيب</span>
+                </a>
+
+                <p class="text-gray-400 text-xs md:text-sm mt-6 md:mt-8"><i class="fa-solid fa-hand-pointer mr-1 animate-pulse text-[#00a896]"></i> اضغط على الزر أعلاه للانتقال للتجربة العملية للتطبيق</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- NEW SIDE CONTROLS -->
+    <button class="side-btn" id="next-btn" aria-label="التالي"><i class="fa-solid fa-chevron-right"></i></button>
+    <button class="side-btn" id="prev-btn" aria-label="السابق"><i class="fa-solid fa-chevron-left"></i></button>
+
+    <script>
+        // Intro Logic
+        document.getElementById('magic-lamp').addEventListener('click', () => {
+            document.getElementById('intro-screen').classList.add('light-on');
+            setTimeout(() => {
+                document.getElementById('flash').classList.add('active');
+                setTimeout(() => {
+                    document.getElementById('intro-screen').style.display = 'none';
+                    document.getElementById('presentation').style.display = 'block';
+                    document.getElementById('next-btn').style.display = 'flex';
+                    document.getElementById('prev-btn').style.display = 'flex';
+                    initSlider();
+                }, 400);
+            }, 600);
+        });
+
+        // Slider Logic
+        let currentSlide = 0; let slides = [];
+        const nextBtn = document.getElementById('next-btn');
+        const prevBtn = document.getElementById('prev-btn');
+
+        function initSlider() {
+            slides = document.querySelectorAll('.slide');
+            updateUI();
+            nextBtn.addEventListener('click', () => { if(currentSlide < slides.length - 1) goToSlide(currentSlide + 1); });
+            prevBtn.addEventListener('click', () => { if(currentSlide > 0) goToSlide(currentSlide - 1); });
+            document.addEventListener('keydown', (e) => {
+                if(e.key === 'ArrowLeft' || e.key === 'ArrowDown') { if(currentSlide < slides.length - 1) goToSlide(currentSlide + 1); }
+                if(e.key === 'ArrowRight' || e.key === 'ArrowUp') { if(currentSlide > 0) goToSlide(currentSlide - 1); }
+            });
+        }
+
+        function goToSlide(index) {
+            slides[currentSlide].classList.remove('active');
+            currentSlide = index;
+            slides[currentSlide].classList.add('active');
+            
+            // Scroll to top of the new slide's content on mobile
+            const content = slides[currentSlide].querySelector('.slide-content');
+            if(content) content.scrollTop = 0;
+            
+            updateUI();
+        }
+
+        function updateUI() {
+            // Disable buttons if at the start or end
+            prevBtn.disabled = currentSlide === 0;
+            nextBtn.disabled = currentSlide === slides.length - 1;
+
+            // Change hover color if it's the last slide (Tabeeb theme)
+            if(currentSlide === slides.length - 1) {
+                document.body.classList.add('tabeeb-active');
+            } else {
+                document.body.classList.remove('tabeeb-active');
+            }
+        }
+    </script>
+</body>
+</html>
+
+
